@@ -83,6 +83,20 @@ def arredonda(elemento):
     chave, mm = elemento
     return (chave, round(mm, 1))
 
+def filtra_campos_vazios(elemento):
+    """
+    Remove elementos que tenham chaves vazias
+    Receber uma tupla ('CE-2015-01', {'chuvas': [85.8], 'dengue': [175.0]})
+    Retorna uma tupla ('CE-2015-01', {'chuvas': [85.8], 'dengue': [175.0]})
+    """
+    chave, dados = elemento
+    if all([
+        dados['chuvas'],
+        dados['dengue']
+        ]):
+        return True
+    return False
+
 dengue = (
     pipeline
     | "Leitura do dataset de dengue" >>
@@ -105,7 +119,17 @@ chuvas = (
     | "Criando a chave UF-ANO-MES" >> beam.Map(chave_uf_ano_mes_de_lista)
     | "Soma do total de chuvas pela chave" >> beam.CombinePerKey(sum)
     | "Arrendondar resultados de chuvas" >> beam.Map(arredonda)
-    | "Mostrar resultados" >> beam.Map(print)
+    # | "Mostrar resultados" >> beam.Map(print)
+)
+
+resultado = (
+    # (chuvas, dengue)
+    # | "Empilha as pcols" >> beam.Flatten()
+    # | "Agrupa as pcols" >> beam.GroupByKey()
+    ({'chuvas': chuvas, 'dengue': dengue})
+    | 'Mesclar pcols' >> beam.CoGroupByKey()
+    | 'Filtrar dados vazios' >> beam.Filter(filtra_campos_vazios)
+    | "Mostrar resultados da união" >> beam.Map(print)
 )
 
 pipeline.run()
