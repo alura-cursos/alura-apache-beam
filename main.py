@@ -59,6 +59,30 @@ def casos_dengue(elemento):
         else:
             yield (f"{uf}-{registro['ano_mes']}", 0.0)
 
+def chave_uf_ano_mes_de_lista(elemento):
+    """
+    Receber uma lista de elementos
+    Retornar uma tupla contendo uma chave e o valor de chuva em mm
+    ('UF-ANO-MES', 1.3)
+    ['2016-01-24', '4.2', 'TO']
+    """
+    data, mm, uf = elemento
+    ano_mes = '-'.join(data.split('-')[:2])
+    chave = f'{uf}-{ano_mes}'
+    if float(mm) < 0:
+        mm = 0.0
+    else:
+        mm = float(mm)
+    return chave, mm
+
+def arredonda(elemento):
+    """
+    Recebe uma tupla ('PA-2019-06', 2364.000000000003)
+    Retorna uma tupla com o valor arredondado ('PA-2019-06', 2364.0)
+    """
+    chave, mm = elemento
+    return (chave, round(mm, 1))
+
 dengue = (
     pipeline
     | "Leitura do dataset de dengue" >>
@@ -78,6 +102,9 @@ chuvas = (
     | "Leitura do dataset de chuvas" >>
         ReadFromText('sample_chuvas.csv', skip_header_lines=1)
     | "De texto para lista (chuvas)" >> beam.Map(texto_para_lista, delimitador=',')
+    | "Criando a chave UF-ANO-MES" >> beam.Map(chave_uf_ano_mes_de_lista)
+    | "Soma do total de chuvas pela chave" >> beam.CombinePerKey(sum)
+    | "Arrendondar resultados de chuvas" >> beam.Map(arredonda)
     | "Mostrar resultados" >> beam.Map(print)
 )
 
