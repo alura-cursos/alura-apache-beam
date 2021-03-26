@@ -1,6 +1,7 @@
 # Files input
-chuvas.csv
-casos_dengue.txt
+chuvas*
+casos_dengue*
+sample*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
